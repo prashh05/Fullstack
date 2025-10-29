@@ -180,5 +180,43 @@ exports.getTasksByUserId = async (req, res) => {
   }
 };
 
+//authUtils.js
+exports.validateToken = (token) => {
+  // Dummy validation function for testing
+  if (!token) return false;
+  return token === 'valid-token';
+};
+
+
+//server.js
+
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+require('dotenv').config();
+
+const app = express();
+app.use(express.json());
+app.use(cors());
+
+// Connect MongoDB
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/testdb', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+app.get('/', (req, res) => {
+  res.send('Server Running...');
+});
+
+module.exports = app;
+
+// Only start server if not in test mode
+if (require.main === module) {
+  app.listen(5000, () => console.log('Server running on port 5000'));
+}
+
+
+
 
 
