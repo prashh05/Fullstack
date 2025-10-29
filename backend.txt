@@ -1,0 +1,184 @@
+//userModel.js
+
+const mongoose = require('mongoose');
+const validator = require('validator');
+
+const userSchema = new mongoose.Schema({
+  firstName: {
+    type: String,
+    required: [true, 'First name is required']
+  },
+  lastName: {
+    type: String,
+    required: [true, 'Last name is required']
+  },
+  mobileNumber: {
+    type: String,
+    required: [true, 'Mobile number is required'],
+    validate: {
+      validator: (v) => /^[0-9]{10}$/.test(v),
+      message: (props) => `${props.value} is not a valid mobile number`
+    }
+  },
+  email: {
+    type: String,
+    required: [true, 'Email is required'],
+    unique: true,
+    validate: {
+      validator: (v) => validator.isEmail(v),
+      message: (props) => `${props.value} is not a valid email address`
+    }
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    required: true
+  },
+  password: {
+    type: String,
+    required: [true, 'Password is required'],
+    minlength: [6, 'Password is shorter than the minimum allowed length'],
+    maxlength: [20, 'Password exceeds the maximum allowed length']
+  }
+});
+
+const User = mongoose.model('User', userSchema);
+module.exports = User;
+
+
+//taskModel.js
+
+const mongoose = require('mongoose');
+
+const taskSchema = new mongoose.Schema({
+  taskName: { type: String, required: true },
+  description: { type: String },
+  assignee: { type: String },
+  dueDate: { type: Date },
+  priority: { type: String, enum: ['Low', 'Medium', 'High'], default: 'Medium' },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
+});
+
+const Task = mongoose.model('Task', taskSchema);
+module.exports = Task;
+
+
+//userController.js
+
+const User = require('../models/userModel');
+
+exports.addUser = async (req, res) => {
+  try {
+    await User.create(req.body);
+    res.status(200).json({ message: 'Success' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getUserByUsernameAndPassword = async (req, res) => {
+  try {
+    const user = await User.findOne(req.body);
+    if (!user) {
+      res.status(200).json({ message: 'Invalid Credentials' });
+    } else {
+      res.status(200).json(user);
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find();
+    res.status(200).json({ users });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+//taskController.js
+
+const Task = require('../models/taskModel');
+
+exports.getAllTasks = async (req, res) => {
+  try {
+    const { sortValue, searchValue } = req.body;
+    const tasks = await Task.find({
+      $or: [
+        { taskName: new RegExp(searchValue, 'i') },
+        { description: new RegExp(searchValue, 'i') }
+      ]
+    }).sort({ dueDate: sortValue });
+
+    res.status(200).json(tasks);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.addTask = async (req, res) => {
+  try {
+    await Task.create(req.body);
+    res.status(200).json({ message: 'Task Added Successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.updateTask = async (req, res) => {
+  try {
+    const updatedTask = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updatedTask) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+    res.status(200).json({ message: 'Task Updated Successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.deleteTask = async (req, res) => {
+  try {
+    const deletedTask = await Task.findByIdAndDelete(req.params.id);
+    if (!deletedTask) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+    res.status(200).json({ message: 'Task Deleted Successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getTaskById = async (req, res) => {
+  try {
+    const task = await Task.findById(req.params.id);
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+    res.status(200).json(task);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getTasksByUserId = async (req, res) => {
+  try {
+    const { userId, sortValue, searchValue } = req.body;
+    const tasks = await Task.find({
+      userId,
+      $or: [
+        { taskName: new RegExp(searchValue, 'i') },
+        { description: new RegExp(searchValue, 'i') }
+      ]
+    }).sort({ dueDate: sortValue });
+    res.status(200).json(tasks);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+
