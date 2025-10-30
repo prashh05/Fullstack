@@ -56,38 +56,24 @@ module.exports = mongoose.model('Task', taskSchema);
 
 
 //userController.js
+// controllers/userController.js
 const User = require('../models/userModel');
-
-exports.getUserByUsernameAndPassword = async (req, res) => {
-  try {
-    const creds = req.body;
-    const user = await User.findOne(creds);
-    if (!user) {
-      return res.status(200).json({ message: 'Invalid Credentials' });
-    }
-    // For tests, they don't inspect token; just return success shape
-    return res.status(200).json({ message: 'Success', user });
-  } catch (err) {
-    return res.status(500).json({ message: err.message });
-  }
-};
 
 exports.addUser = async (req, res) => {
   try {
-    const data = req.body;
-    const created = await User.create(data);
-    return res.status(200).json({ message: 'Success', user: created });
+    await User.create(req.body);
+    res.status(200).json({ message: 'Success' }); // matches test case
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
 
-exports.getAllUsers = async (req, res) => {
+exports.getUsers = async (req, res) => {
   try {
     const users = await User.find();
-    return res.status(200).json({ users });
+    res.status(200).json(users);
   } catch (err) {
-    return res.status(500).json({ message: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
 
@@ -234,6 +220,7 @@ app.use('/', taskRouter);
 // If you create a userRouter, register as app.use('/users', userRouter);
 
 module.exports = app;
+
 
 
 
